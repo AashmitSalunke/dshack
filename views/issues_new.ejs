@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Issue - CivicOne</title>
+    <style>
+        /* Basic reset & styles */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; }
+
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .navbar-brand { font-size: 1.8em; font-weight: 700; }
+        .navbar-menu { display: flex; gap: 30px; align-items: center; }
+        .navbar-menu a { color: white; text-decoration: none; font-weight: 500; }
+        .navbar-menu a:hover { opacity: 0.8; }
+
+        .container { max-width: 800px; margin: 40px auto; padding: 0 20px; }
+        .form-container { background: white; border-radius: 15px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+
+        .form-header { text-align: center; margin-bottom: 40px; }
+        .form-header .icon { font-size: 4em; margin-bottom: 15px; }
+        .form-header h1 { color: #333; margin-bottom: 10px; }
+        .form-header p { color: #666; }
+
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #555; font-weight: 600; }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%; padding: 14px 18px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1em; transition: all 0.3s;
+        }
+        .form-group textarea { min-height: 120px; resize: vertical; }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+        }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+        .file-input-wrapper { position: relative; overflow: hidden; display: inline-block; width: 100%; }
+        .file-input-wrapper input[type=file] { position: absolute; left: -9999px; }
+        .file-input-label {
+            display: block; padding: 14px 18px; background: #f8f9fa; border: 2px dashed #667eea; border-radius: 10px;
+            text-align: center; cursor: pointer; transition: all 0.3s;
+        }
+        .file-input-label:hover { background: #e3f2fd; }
+        .file-input-label .icon { font-size: 2em; display: block; margin-bottom: 10px; }
+
+        .location-btn {
+            padding: 14px 18px; background: #4CAF50; color: white; border: none; border-radius: 10px; cursor: pointer;
+            width: 100%; font-size: 1em; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .location-btn:hover { background: #45a049; }
+
+        .location-status { margin-top: 10px; padding: 10px; background: #d4edda; color: #155724; border-radius: 8px; display: none; }
+
+        .btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 1.1em; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3); }
+        .btn-secondary { background: #6c757d; margin-top: 15px; }
+        .btn-secondary:hover { background: #5a6268; }
+
+        @media (max-width: 768px) { .navbar { flex-direction: column; gap: 20px; } .navbar-menu { flex-direction: column; gap: 15px; } .form-row { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">🏛️ CivicOne</div>
+        <div class="navbar-menu">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/issues">View Issues</a>
+            <a href="/issues/new">Report Issue</a>
+            <a href="/upload">AI Analysis</a>
+            <a href="/ai">AI Assistant</a>
+            <a href="/account">My Account</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="form-container">
+            <div class="form-header">
+                <div class="icon">📝</div>
+                <h1>Report a New Issue</h1>
+                <p>Help us improve your community by reporting issues</p>
+            </div>
+
+            <% if(typeof error !== 'undefined') { %>
+                <div style="color:red; margin-bottom:15px;"><%= error %></div>
+            <% } %>
+
+            <form action="/issues" method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="title">Issue Title *</label>
+                    <input type="text" id="title" name="title" required placeholder="Brief description of the issue" value="<%= typeof title !== 'undefined' ? title : '' %>">
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Detailed Description *</label>
+                    <textarea id="description" name="description" required placeholder="Provide more details about the issue..."><%= typeof description !== 'undefined' ? description : '' %></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="category">Category *</label>
+                        <select id="category" name="category" required>
+    <option value="">Select a category</option>
+
+    <option value="roads"
+        <%= (typeof category !== 'undefined' && category === 'roads') ? 'selected' : '' %>>
+        🛣️ Roads & Infrastructure
+    </option>
+
+    <option value="sanitation"
+        <%= (typeof category !== 'undefined' && category === 'sanitation') ? 'selected' : '' %>>
+        🗑️ Sanitation & Waste
+    </option>
+
+    <option value="water"
+        <%= (typeof category !== 'undefined' && category === 'water') ? 'selected' : '' %>>
+        💧 Water Supply
+    </option>
+
+    <option value="electricity"
+        <%= (typeof category !== 'undefined' && category === 'electricity') ? 'selected' : '' %>>
+        💡 Electricity
+    </option>
+
+    <option value="parks"
+        <%= (typeof category !== 'undefined' && category === 'parks') ? 'selected' : '' %>>
+        🌳 Parks & Recreation
+    </option>
+
+    <option value="safety"
+        <%= (typeof category !== 'undefined' && category === 'safety') ? 'selected' : '' %>>
+        🚨 Public Safety
+    </option>
+
+    <option value="other"
+        <%= (typeof category !== 'undefined' && category === 'other') ? 'selected' : '' %>>
+        📋 Other
+    </option>
+</select>
+
+<select id="severity" name="severity" required>
+    <option value="">Select severity</option>
+    <option value="low"
+        <%= (typeof severity !== 'undefined' && severity === 'low') ? 'selected' : '' %>>
+        Low
+    </option>
+
+    <option value="medium"
+        <%= (typeof severity !== 'undefined' && severity === 'medium') ? 'selected' : '' %>>
+        Medium
+    </option>
+
+    <option value="high"
+        <%= (typeof severity !== 'undefined' && severity === 'high') ? 'selected' : '' %>>
+        High
+    </option>
+</select>
+
+<input type="text" id="title" name="title"
+    value="<%= typeof title !== 'undefined' ? title : '' %>">
+
+<textarea id="description" name="description"><%= typeof description !== 'undefined' ? description : '' %></textarea>
+
+<input type="hidden" id="latitude" name="latitude"
+    value="<%= typeof latitude !== 'undefined' ? latitude : '' %>">
+
+<input type="hidden" id="longitude" name="longitude"
+    value="<%= typeof longitude !== 'undefined' ? longitude : '' %>">
+
+<input type="hidden" name="userId"
+    value="<%= typeof userId !== 'undefined' ? userId : 'demo-user-id' %>">

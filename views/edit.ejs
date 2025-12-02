@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Edit Profile - CivicOne</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;background:#f5f7fa;color:#222;}
+
+    .navbar {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color:white;
+      padding:20px 40px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      box-shadow:0 2px 10px rgba(0,0,0,0.1);
+    }
+    .navbar-brand{font-size:1.8em;font-weight:700;}
+    .navbar-menu{display:flex;gap:30px;align-items:center;}
+    .navbar-menu a{color:white;text-decoration:none;font-weight:500;transition:opacity 0.3s;}
+    .navbar-menu a:hover{opacity:0.8;}
+
+    .container{max-width:700px;margin:40px auto;padding:0 20px;}
+    .form-container{background:white;border-radius:15px;padding:40px;box-shadow:0 2px 10px rgba(0,0,0,0.05);}
+    .form-header{text-align:center;margin-bottom:40px;}
+    .form-header .icon{font-size:4em;margin-bottom:15px;}
+    .form-header h1{color:#333;margin-bottom:10px;}
+    .form-header p{color:#666;}
+
+    .form-group{margin-bottom:25px;}
+    .form-group label{display:block;margin-bottom:8px;color:#555;font-weight:600;}
+    .form-group input,
+    .form-group select{width:100%;padding:14px 18px;border:2px solid #e0e0e0;border-radius:10px;font-size:1em;transition:all 0.3s;font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;}
+    .form-group input:focus,
+    .form-group select:focus{outline:none;border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,0.1);}
+    .form-group small{display:block;margin-top:5px;color:#888;font-size:0.9em;}
+
+    .btn{width:100%;padding:16px;border:none;border-radius:10px;font-size:1.1em;font-weight:600;cursor:pointer;transition:transform 0.2s, box-shadow 0.2s;margin-top:10px;}
+    .btn-primary{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 20px rgba(102,126,234,0.3);}
+    .btn-secondary{background:#6c757d;color:white;margin-top:15px;text-align:center;display:block;text-decoration:none;}
+    .btn-secondary:hover{background:#5a6268;}
+
+    @media(max-width:768px){
+      .navbar{flex-direction:column;gap:20px;}
+      .navbar-menu{flex-direction:column;gap:15px;}
+      .form-container{padding:30px 25px;}
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-brand">🏛️ CivicOne</div>
+    <div class="navbar-menu">
+      <a href="/dashboard">Dashboard</a>
+      <a href="/issues">View Issues</a>
+      <a href="/issues/new">Report Issue</a>
+      <a href="/upload">AI Analysis</a>
+      <a href="/ai">AI Assistant</a>
+      <a href="/account">My Account</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="form-container">
+      <div class="form-header">
+        <div class="icon">✏️</div>
+        <h1>Edit Your Profile</h1>
+        <p>Update your account information</p>
+      </div>
+
+      <form action="/users/<%= user._id %>?_method=PUT" method="POST">
+        <div class="form-group">
+          <label for="name">Full Name</label>
+          <input type="text" id="name" name="name" value="<%= user.name %>" required>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" value="<%= user.email %>" required>
+        </div>
+
+        <div class="form-group">
+          <label for="phone">Phone Number</label>
+          <input type="tel" id="phone" name="phone" value="<%= user.phone %>" required>
+        </div>
+
+        <div class="form-group">
+          <label for="role">Role</label>
+          <select id="role" name="role" required>
+            <option value="citizen" <%= user.role === 'citizen' ? 'selected' : '' %>>Citizen</option>
+            <option value="official" <%= user.role === 'official' ? 'selected' : '' %>>Government Official</option>
+            <option value="volunteer" <%= user.role === 'volunteer' ? 'selected' : '' %>>Volunteer</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="password">New Password</label>
+          <input type="password" id="password" name="password" placeholder="Leave blank to keep current password">
+          <small>Only fill this if you want to change your password</small>
+        </div>
+
+        <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+        <a href="/account" class="btn btn-secondary">Cancel</a>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

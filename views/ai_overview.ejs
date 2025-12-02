@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant Overview</title>
+    <style>
+        body { font-family: Arial, Helvetica, sans-serif; background: #f7f9fb; color: #222; }
+        .container { max-width: 800px; margin: 40px auto; padding: 32px; background: #fff; border-radius: 12px; box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
+        h1 { text-align: center; color: #007bff; margin-bottom: 18px; }
+        .desc { font-size: 18px; margin-bottom: 24px; text-align: center; }
+        .ai-box { background: #f1f6fa; border-radius: 10px; padding: 24px; margin-bottom: 24px; }
+        .ai-label { font-weight: bold; color: #444; margin-bottom: 8px; }
+        form { display: flex; flex-direction: column; gap: 12px; }
+        textarea { width: 100%; min-height: 80px; border-radius: 6px; border: 1px solid #d6dde6; padding: 10px; font-size: 15px; }
+        button { background: #007bff; color: #fff; border: none; padding: 12px 22px; border-radius: 8px; font-size: 16px; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #0056b3; }
+        .response { background: #eaf6ea; border-left: 5px solid #4CAF50; padding: 16px; border-radius: 8px; margin-top: 18px; white-space: pre-wrap; }
+        .tts-btn { background: #4CAF50; color: #fff; border: none; padding: 12px 22px; border-radius: 8px; font-size: 16px; cursor: pointer; transition: 0.3s; }
+        .tts-btn:hover { background: #3e8f4d; }
+        .tts-audio { display: none; margin-top: 10px; width: 100%; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gemini AI Assistant</h1>
+        <div class="desc">
+            Get instant suggestions, insights, and answers powered by Google Gemini AI. Ask anything related to civic issues, reporting, or get general advice!
+        </div>
+        <div class="ai-box">
+            <div class="ai-label">Ask Gemini:</div>
+            <form action="/ai" method="POST">
+                <textarea name="prompt" placeholder="Type your question or request here..." required></textarea>
+                <button type="submit">Get AI Suggestion</button>
+            </form>
+            <% if(typeof response !== 'undefined') { %>
+                <div class="response" id="ai-response"><%= response %></div>
+                <button id="tts-btn" style="margin-top:12px;background:#4CAF50;">🔊 Listen</button>
+                <audio id="tts-audio" controls style="display:none;margin-top:10px;width:100%"></audio>
+                <script>
+                document.getElementById('tts-btn').onclick = async function() {
+                    const text = document.getElementById('ai-response').innerText;
+                    const btn = this;
+                    btn.disabled = true;
+                    btn.textContent = 'Loading...';
+                    try {
+                        const res = await fetch('/tts', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ text })
+                        });
+                        if (!res.ok) throw new Error('TTS failed');
+                        const blob = await res.blob();
+                        const audio = document.getElementById('tts-audio');
+                        audio.src = URL.createObjectURL(blob);
+                        audio.style.display = 'block';
+                        audio.play();
+                    } catch (e) {
+                        alert('Sorry, could not generate audio.');
+                    } finally {
+                        btn.disabled = false;
+                        btn.textContent = '🔊 Listen';
+                    }
+                };
+                </script>
+            <% } %>
+        </div>
+        <a href="/dashboard" style="display:inline-block;margin-top:18px;color:#007bff;text-decoration:none;">&larr; Back to Dashboard</a>
+    </div>
+</body>
+</html>

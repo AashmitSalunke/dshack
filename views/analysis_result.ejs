@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Waste Analysis</title>
+
+    <!-- Simple clean styling -->
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Poppins", sans-serif;
+            background: #f5f7fa;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 25px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #222;
+        }
+
+        .image-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .image-section img {
+            max-width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.2);
+        }
+
+        .analysis-box {
+            padding: 20px;
+            background: #fff;
+            border-radius: 12px;
+            border-left: 5px solid #4CAF50;
+            line-height: 1.6;
+            font-size: 17px;
+            white-space: pre-wrap;
+        }
+
+        .btn {
+            margin-top: 25px;
+            display: inline-block;
+            text-decoration: none;
+            padding: 12px 22px;
+            background: #4CAF50;
+            color: white;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #45a049;
+        }
+
+        .center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>AI Waste Analysis Result</h1>
+
+        <div class="image-section">
+            <img src="/uploads/<%= image %>" alt="Uploaded Image">
+        </div>
+
+        <h2>AI Image Overview & Suggestions</h2>
+        <div class="analysis-box" style="font-size: 1.1em; line-height: 1.8;">
+            <% if (analysis) { %>
+                <div id="ai-analysis-text">
+                <% let lines = analysis.split(/\r?\n/); %>
+                <% lines.forEach(function(line) { %>
+                    <% if (line.trim().startsWith('## ')) { %>
+                        <h3 style="color:#007bff;margin-top:1.2em;margin-bottom:0.5em;font-size:1.3em;"><%= line.replace('## ','') %></h3>
+                    <% } else if (line.trim().startsWith('### ')) { %>
+                        <h4 style="color:#4CAF50;margin-top:1em;margin-bottom:0.4em;font-size:1.1em;"><%= line.replace('### ','') %></h4>
+                    <% } else if (line.trim().startsWith('* ')) { %>
+                        <li style="margin-left:1.2em;"> <%= line.replace('* ','') %> </li>
+                    <% } else if (line.trim() === '') { %>
+                        <br/>
+                    <% } else { %>
+                        <div style="margin-bottom:0.5em;"> <%= line %> </div>
+                    <% } %>
+                <% }); %>
+                </div>
+                <button id="tts-btn" style="margin-top:12px;background:#4CAF50;">🔊 Listen</button>
+                <audio id="tts-audio" controls style="display:none;margin-top:10px;width:100%"></audio>
+                <script>
+                document.getElementById('tts-btn').onclick = async function() {
+                    const text = document.getElementById('ai-analysis-text').innerText;
+                    const btn = this;
+                    btn.disabled = true;
+                    btn.textContent = 'Loading...';
+                    try {
+                        const res = await fetch('/tts', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ text })
+                        });
+                        if (!res.ok) throw new Error('TTS failed');
+                        const blob = await res.blob();
+                        const audio = document.getElementById('tts-audio');
+                        audio.src = URL.createObjectURL(blob);
+                        audio.style.display = 'block';
+                        audio.play();
+                    } catch (e) {
+                        alert('Sorry, could not generate audio.');
+                    } finally {
+                        btn.disabled = false;
+                        btn.textContent = '🔊 Listen';
+                    }
+                };
+                </script>
+            <% } else { %>
+                <em>No analysis available.</em>
+            <% } %>
+        </div>
+
+        <div class="center">
+            <a href="/upload" class="btn">Upload Another Image</a>
+        </div>
+    </div>
+
+</body>
+</html>

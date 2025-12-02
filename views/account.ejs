@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Account</title>
+    <style>
+        body{font-family: Arial, Helvetica, sans-serif;background:#f4f6f8;color:#222}
+        .wrap{max-width:720px;margin:40px auto;padding:20px;background:#fff;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.06)}
+        h1{margin-bottom:8px}
+        dl{display:grid;grid-template-columns:140px 1fr;row-gap:10px;column-gap:12px}
+        dt{font-weight:600;color:#555}
+        dd{margin:0;color:#111}
+        .actions{margin-top:18px}
+        .btn{display:inline-block;padding:8px 12px;background:#007bff;color:#fff;border-radius:6px;text-decoration:none}
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <h1>Account</h1>
+        <p>Logged in as: <strong><%= typeof user !== 'undefined' ? user.name : 'Guest' %></strong></p>
+
+        <dl>
+            <dt>Name</dt>
+            <dd><%= user && user.name ? user.name : '-' %></dd>
+
+            <dt>Email</dt>
+            <dd><%= user && user.email ? user.email : '-' %></dd>
+
+            <dt>Role</dt>
+            <dd><%= user && user.role ? user.role : '-' %></dd>
+
+            <dt>Phone</dt>
+            <dd><%= user && user.phone ? user.phone : '-' %></dd>
+
+            <dt>Joined</dt>
+            <dd><%= user && user.createdAt ? new Date(user.createdAt).toLocaleString() : '-' %></dd>
+        </dl>
+
+                <div class="actions">
+                        <a class="btn" href="/dashboard">Back to Dashboard</a>
+                        <% if (user && user._id) { %>
+                            <a class="btn" href="/users/<%= user._id %>/edit" style="background:#28a745;margin-left:8px">Edit Profile</a>
+                        <% } else { %>
+                            <a class="btn" href="/account/edit" style="background:#28a745;margin-left:8px">Edit Profile</a>
+                        <% } %>
+                </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CivicOne — Register</title>
+    <style>
+        :root{--bg:#f4f7fb;--card:#fff;--accent:#007bff}
+        body{font-family:Segoe UI, Roboto, Arial, sans-serif;background:var(--bg);margin:0;padding:0;min-height:100vh;display:flex;align-items:center;justify-content:center}
+        .card{background:var(--card);width:100%;max-width:520px;padding:28px;border-radius:10px;box-shadow:0 6px 18px rgba(30,40,50,0.06)}
+        h1{margin:0 0 10px;font-size:20px;color:#1f2d3d}
+        form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        label{font-size:13px;color:#42505a}
+        input[type=text],input[type=email],input[type=password]{padding:10px;border:1px solid #d6dde6;border-radius:6px;font-size:14px;width:100%}
+        .full{grid-column:1 / -1}
+        .actions{grid-column:1 / -1;display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:6px}
+        button{background:var(--accent);border:none;color:#fff;padding:10px 14px;border-radius:6px;cursor:pointer}
+        .muted{color:#6b7785;font-size:13px}
+        @media(max-width:600px){form{grid-template-columns:1fr}}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Register If You Are New</h1>
+        <form action="/register" method="POST">
+            <div class="full">
+                <label for="name">Name</label>
+                <input type="text" id="name" name="name" required placeholder="Your full name">
+            </div>
+
+            <div>
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required placeholder="you@example.com">
+            </div>
+
+            <div>
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required placeholder="Choose a strong password">
+            </div>
+
+            <div class="full actions">
+                <a class="muted" href="/users">Back to Login</a>
+                <button type="submit">Register</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
