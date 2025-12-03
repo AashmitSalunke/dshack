@@ -161,10 +161,10 @@ app.get('/dashboard', async (req, res) => {
         } else {
             user = await User.findOne().lean();
         }
-        return res.render('dashboard', { user: user || null });
+        return res.render('dashboard.ejs', { user: user || null });
     } catch (err) {
         console.error('Error rendering dashboard:', err);
-        return res.render('dashboard', { user: null });
+        return res.render('dashboard.ejs', { user: null });
     }
 });
 
@@ -172,7 +172,7 @@ app.get('/dashboard', async (req, res) => {
 app.get('/issues', async (req, res) => {
     try {
         const issues = await Issue.find().sort({ createdAt: -1 }).lean();
-        return res.render('issues', { issues });
+        return res.render('issues.ejs', { issues });
     } catch (err) {
         console.error('Error loading issues:', err);
         return res.status(500).send('Server error loading issues');
@@ -289,7 +289,7 @@ app.get('/issues',async(req,res)=>{
     }
 });
 app.get('/upload', (req, res) => {
-    res.render('upload');
+    res.render('../listings/upload.ejs');
 });
 app.post('/upload', upload.single('file'), async (req, res) => {
     try {
@@ -320,7 +320,7 @@ app.post('/ai', async (req, res) => {
     try {
         const prompt = req.body.prompt;
         if (!prompt || prompt.trim().length === 0) {
-            return res.render('ai_overview', { response: 'Please enter a prompt.' });
+            return res.render('../listings/ai_overview', { response: 'Please enter a prompt.' });
         }
         // Use Gemini AI to get a suggestion (correct format)
         const { GoogleGenerativeAI } = require('@google/generative-ai');

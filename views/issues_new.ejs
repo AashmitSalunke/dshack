@@ -60,12 +60,39 @@
 
         .location-status { margin-top: 10px; padding: 10px; background: #d4edda; color: #155724; border-radius: 8px; display: none; }
 
-        .btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 1.1em; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        .btn {
+            width: 100%; padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; border-radius: 10px;
+            font-size: 1.1em; font-weight: 600; cursor: pointer; margin-top: 10px;
+        }
         .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3); }
-        .btn-secondary { background: #6c757d; margin-top: 15px; }
-        .btn-secondary:hover { background: #5a6268; }
 
-        @media (max-width: 768px) { .navbar { flex-direction: column; gap: 20px; } .navbar-menu { flex-direction: column; gap: 15px; } .form-row { grid-template-columns: 1fr; } }
+        /* NEW BUTTON STYLE */
+        .btn-link {
+            display: block;
+            width: 100%;
+            text-align: center;
+            margin-top: 20px;
+            padding: 14px;
+            background: #ff7f50;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            border-radius: 10px;
+            transition: 0.3s;
+        }
+        .btn-link:hover {
+            background: #ff5722;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 87, 34, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .navbar { flex-direction: column; gap: 20px; }
+            .navbar-menu { flex-direction: column; gap: 15px; }
+            .form-row { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -94,6 +121,7 @@
             <% } %>
 
             <form action="/issues" method="POST" enctype="multipart/form-data">
+
                 <div class="form-group">
                     <label for="title">Issue Title *</label>
                     <input type="text" id="title" name="title" required placeholder="Brief description of the issue" value="<%= typeof title !== 'undefined' ? title : '' %>">
@@ -106,74 +134,50 @@
 
                 <div class="form-row">
                     <div class="form-group">
+
                         <label for="category">Category *</label>
                         <select id="category" name="category" required>
-    <option value="">Select a category</option>
+                            <option value="">Select a category</option>
+                            <option value="roads" <%= (typeof category !== 'undefined' && category === 'roads') ? 'selected' : '' %>>🛣️ Roads & Infrastructure</option>
+                            <option value="sanitation" <%= (typeof category !== 'undefined' && category === 'sanitation') ? 'selected' : '' %>>🗑️ Sanitation & Waste</option>
+                            <option value="water" <%= (typeof category !== 'undefined' && category === 'water') ? 'selected' : '' %>>💧 Water Supply</option>
+                            <option value="electricity" <%= (typeof category !== 'undefined' && category === 'electricity') ? 'selected' : '' %>>💡 Electricity</option>
+                            <option value="parks" <%= (typeof category !== 'undefined' && category === 'parks') ? 'selected' : '' %>>🌳 Parks & Recreation</option>
+                            <option value="safety" <%= (typeof category !== 'undefined' && category === 'safety') ? 'selected' : '' %>>🚨 Public Safety</option>
+                            <option value="other" <%= (typeof category !== 'undefined' && category === 'other') ? 'selected' : '' %>>📋 Other</option>
+                        </select>
 
-    <option value="roads"
-        <%= (typeof category !== 'undefined' && category === 'roads') ? 'selected' : '' %>>
-        🛣️ Roads & Infrastructure
-    </option>
+                        <select id="severity" name="severity" required>
+                            <option value="">Select severity</option>
+                            <option value="low" <%= (typeof severity !== 'undefined' && severity === 'low') ? 'selected' : '' %>>Low</option>
+                            <option value="medium" <%= (typeof severity !== 'undefined' && severity === 'medium') ? 'selected' : '' %>>Medium</option>
+                            <option value="high" <%= (typeof severity !== 'undefined' && severity === 'high') ? 'selected' : '' %>>High</option>
+                        </select>
 
-    <option value="sanitation"
-        <%= (typeof category !== 'undefined' && category === 'sanitation') ? 'selected' : '' %>>
-        🗑️ Sanitation & Waste
-    </option>
+                        <input type="text" id="title" name="title"
+                            value="<%= typeof title !== 'undefined' ? title : '' %>">
 
-    <option value="water"
-        <%= (typeof category !== 'undefined' && category === 'water') ? 'selected' : '' %>>
-        💧 Water Supply
-    </option>
+                        <textarea id="description" name="description"><%= typeof description !== 'undefined' ? description : '' %></textarea>
 
-    <option value="electricity"
-        <%= (typeof category !== 'undefined' && category === 'electricity') ? 'selected' : '' %>>
-        💡 Electricity
-    </option>
+                        <input type="hidden" id="latitude" name="latitude"
+                            value="<%= typeof latitude !== 'undefined' ? latitude : '' %>">
 
-    <option value="parks"
-        <%= (typeof category !== 'undefined' && category === 'parks') ? 'selected' : '' %>>
-        🌳 Parks & Recreation
-    </option>
+                        <input type="hidden" id="longitude" name="longitude"
+                            value="<%= typeof longitude !== 'undefined' ? longitude : '' %>">
 
-    <option value="safety"
-        <%= (typeof category !== 'undefined' && category === 'safety') ? 'selected' : '' %>>
-        🚨 Public Safety
-    </option>
+                        <input type="hidden" name="userId"
+                            value="<%= typeof userId !== 'undefined' ? userId : 'demo-user-id' %>">
+                    </div>
+                </div>
 
-    <option value="other"
-        <%= (typeof category !== 'undefined' && category === 'other') ? 'selected' : '' %>>
-        📋 Other
-    </option>
-</select>
+                <!-- Default Submit Button -->
+                <button type="submit" class="btn">Submit Issue</button>
 
-<select id="severity" name="severity" required>
-    <option value="">Select severity</option>
-    <option value="low"
-        <%= (typeof severity !== 'undefined' && severity === 'low') ? 'selected' : '' %>>
-        Low
-    </option>
+                <!-- NEW EXTRA BUTTON WITH LINK -->
+                <a href="/issues" class="btn-link">Go Back to Home</a>
 
-    <option value="medium"
-        <%= (typeof severity !== 'undefined' && severity === 'medium') ? 'selected' : '' %>>
-        Medium
-    </option>
-
-    <option value="high"
-        <%= (typeof severity !== 'undefined' && severity === 'high') ? 'selected' : '' %>>
-        High
-    </option>
-</select>
-
-<input type="text" id="title" name="title"
-    value="<%= typeof title !== 'undefined' ? title : '' %>">
-
-<textarea id="description" name="description"><%= typeof description !== 'undefined' ? description : '' %></textarea>
-
-<input type="hidden" id="latitude" name="latitude"
-    value="<%= typeof latitude !== 'undefined' ? latitude : '' %>">
-
-<input type="hidden" id="longitude" name="longitude"
-    value="<%= typeof longitude !== 'undefined' ? longitude : '' %>">
-
-<input type="hidden" name="userId"
-    value="<%= typeof userId !== 'undefined' ? userId : 'demo-user-id' %>">
+            </form>
+        </div>
+    </div>
+</body>
+</html>
