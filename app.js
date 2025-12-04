@@ -56,8 +56,41 @@ app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ---------- Basic pages ----------
-app.get('/', (req, res) => res.redirect('/issues'));
+app.get('/', (req, res) => res.redirect('/user'));
 
+
+
+app.get('/user', (req, res) => res.render('login.ejs'));
+app.post('/login',async(req,res)=>{
+    const { email, password } = req.body;
+    try {
+        const user = await User.findOne({ email, password });
+        if (!user) {
+            return res.status(401).render('login.ejs', { error: 'Invalid email or password' });
+        }
+        res.render('dashboard.ejs', { user: user.toObject() });
+    } catch (err) {
+        console.error('Login error:', err);
+        res.status(500).render('login.ejs', { error: 'Server error' });
+    }
+})
+
+app.get('/register', (req, res) => res.render('register.ejs'));
+app.post('/register', async (req, res) => {
+    const { name, email, password, role, phone } = req.body;
+    try {
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).render('register.ejs', { error: 'Email already registered' });
+        }
+        const user = new User({ name, email, password, role, phone });
+        await user.save();
+        res.render('login.ejs', { user: user.toObject() });
+    } catch (err) {
+        console.error('Registration error:', err);
+        res.status(500).render('register.ejs', { error: 'Server error' });
+    }
+});
 // Dashboard/account pages — for dev we allow ?id=<userId> to simulate login
 app.get('/dashboard', async (req, res) => {
   try {
