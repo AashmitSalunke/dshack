@@ -1,350 +1,227 @@
+// app.js
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const { analyzeImage } = require("./geminiAI"); // your AI module
-
-
+const { analyzeImage } = require("./geminiAI"); // optional - keep as you had
 const multer = require('multer');
-const app = express();
+const methodOverride = require('method-override');
+const path = require('path');
+const fs = require('fs');
+
 const User = require('./models/user');
 const Issue = require('./models/issue');
-const methodOverride = require('method-override');
-const path = require("path");
 
+const app = express();
+const port = process.env.PORT || 3000;
 
-const port = 3000;
+// Ensure upload folder exists
+const uploadDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-// Configure multer for file uploads
+// Multer config
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, path.join(__dirname, 'public/uploads'));
-    },
-    filename: (req, file, cb) => {
-        const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname);
-        cb(null, uniqueName);
-    }
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname);
+    cb(null, uniqueName);
+  }
 });
-
 const upload = multer({
-    storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
-    fileFilter: (req, file, cb) => {
-        const allowedTypes = /jpeg|jpg|png|gif/;
-        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-        const mimetype = allowedTypes.test(file.mimetype);
-        if (mimetype && extname) {
-            return cb(null, true);
-        } else {
-            cb(new Error('Only image files are allowed (jpeg, jpg, png, gif)'));
-        }
-    }
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = /jpeg|jpg|png|gif/;
+    const okExt = allowed.test(path.extname(file.originalname).toLowerCase());
+    const okMime = allowed.test(file.mimetype);
+    if (okExt && okMime) cb(null, true);
+    else cb(new Error('Only images (jpeg,jpg,png,gif) are allowed'));
+  }
 });
 
-main().then(()=>{
-    console.log("Connected to MongoDB");
-
-})
-.catch(err=>{
-    console.log("Error connecting to MongoDB:",err);
-});
-async function main(){
-    await mongoose.connect('mongodb://127.0.0.1:27017/DsHack');
+// Connect to Mongo
+async function main() {
+  await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/DsHack', {
+    
+  });
 }
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
+main()
+  .then(()=> console.log('Connected to MongoDB'))
+  .catch(err => console.error('Mongo connection error:', err));
+
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
 
+// ---------- Basic pages ----------
+app.get('/', (req, res) => res.redirect('/issues'));
 
-app.get('/',(req,res)=>{
-    res.redirect('/users');
-})
-
-app.get('/users',async(req,res)=>{
-    res.render('login.ejs');
-})
-app.post('/login',async(req,res)=>{
-    try{
-        console.log('Login attempt body:', req.body);
-        const {email,password} = req.body;
-        // Find by email and include password field (schema has select: false)
-        const user = await User.findOne({ email: email }).select('+password');
-        if(!user){
-            console.log('No user found with email:', email);
-            return res.send('Invalid email or password. Please try again.');
-        }
-        // Simple plaintext compare (init data uses plain passwords). If you hash passwords, use bcrypt.compare
-        if(user.password === password){
-            return res.redirect('/dashboard');
-        } else {
-            console.log('Password mismatch for user:', email);
-            return res.send('Invalid email or password. Please try again.');
-        }
-    }catch(err){
-        console.error('Login error:', err);
-        res.status(500).send('Server error');
-    }
-})
-
-app.get('/register',(req,res)=>{
-    res.render('register.ejs');
-})
-app.post('/register',async(req,res)=>{
-    try{
-        console.log('Registration attempt body:', req.body);
-        // Trim and normalize inputs to avoid validation issues (e.g. accidental spaces/newlines)
-        let { name, email, password, role, phone } = req.body;
-        name = typeof name === 'string' ? name.trim() : name;
-        email = typeof email === 'string' ? email.trim().toLowerCase() : email;
-        password = typeof password === 'string' ? password.trim() : password;
-        role = typeof role === 'string' ? role.trim() : role;
-        phone = typeof phone === 'string' ? phone.trim() : phone;
-
-        console.log('Normalized registration values:', { name, email, role, phone });
-
-        // Validate email format server-side using the same simple regex as the schema
-        const emailRegex = /^\S+@\S+\.\S+$/;
-        if(!email || !emailRegex.test(email)){
-            return res.status(400).send('Registration validation failed: Please enter a valid email');
-        }
-
-        const newUser = new User({ name, email, password, role, phone });
-        await newUser.save();
-        return res.redirect('/dashboard');
-    }catch(err){
-        console.error('Registration error:', err);
-        // Handle duplicate email (unique index)
-        if(err && err.code === 11000){
-            const dupKey = Object.keys(err.keyValue || {}).join(', ');
-            return res.status(400).send(`Registration failed: duplicate field(s): ${dupKey}`);
-        }
-        // Mongoose validation error
-        if(err && err.name === 'ValidationError'){
-            const messages = Object.values(err.errors).map(e=>e.message).join('; ');
-            return res.status(400).send(`Registration validation failed: ${messages}`);
-        }
-        res.status(500).send('Server error during registration');
-    }
+// Dashboard/account pages — for dev we allow ?id=<userId> to simulate login
+app.get('/dashboard', async (req, res) => {
+  try {
+    let user = null;
+    if (req.query.id) user = await User.findById(req.query.id).lean();
+    else user = await User.findOne().lean();
+    res.render('dashboard.ejs', { user: user || null });
+  } catch (err) {
+    console.error(err);
+    res.render('dashboard.ejs', { user: null });
+  }
 });
 
 app.get('/account', async (req, res) => {
-    try {
-        // Allow testing by passing ?id=<userId> or ?email=<email>
-        const { id, email } = req.query;
-        let user = null;
-        if (id) {
-            user = await User.findById(id).lean();
-        } else if (email) {
-            user = await User.findOne({ email: email.toLowerCase().trim() }).lean();
-        } else {
-            // Fallback: first user in DB (helpful for development only)
-            user = await User.findOne().lean();
-        }
-
-        return res.render('account', { user: user || null });
-    } catch (err) {
-        console.error('Error rendering account page:', err);
-        return res.render('account', { user: null });
-    }
+  try {
+    let user = null;
+    if (req.query.id) user = await User.findById(req.query.id).lean();
+    else user = await User.findOne().lean();
+    res.render('account.ejs', { user: user || null });
+  } catch (err) {
+    console.error(err);
+    res.render('account.ejs', { user: null });
+  }
 });
 
-app.get('/dashboard', async (req, res) => {
-    try {
-        const { id, email } = req.query;
-        let user = null;
-        if (id) {
-            user = await User.findById(id).lean();
-        } else if (email) {
-            user = await User.findOne({ email: email.toLowerCase().trim() }).lean();
-        } else {
-            user = await User.findOne().lean();
-        }
-        return res.render('dashboard.ejs', { user: user || null });
-    } catch (err) {
-        console.error('Error rendering dashboard:', err);
-        return res.render('dashboard.ejs', { user: null });
-    }
-});
-
-// Issues routes
+// ---------- Issues ----------
 app.get('/issues', async (req, res) => {
-    try {
-        const issues = await Issue.find().sort({ createdAt: -1 }).lean();
-        return res.render('issues.ejs', { issues });
-    } catch (err) {
-        console.error('Error loading issues:', err);
-        return res.status(500).send('Server error loading issues');
-    }
+  try {
+    const issues = await Issue.find().sort({ createdAt: -1 }).lean();
+    res.render('issues.ejs', { issues });
+  } catch (err) {
+    console.error('Error loading issues:', err);
+    res.status(500).send('Error loading issues');
+  }
 });
 
-app.get('/issues/new', (req, res) => {
-    return res.render('issues_new');
+// Render new issue form. To simulate a logged-in user in dev,
+// pass ?id=<userId> (seed created id) or it will pick first user in DB.
+app.get('/issues/new', async (req, res) => {
+  try {
+    let user = null;
+    if (req.query.id) user = await User.findById(req.query.id).lean();
+    else user = await User.findOne().lean();
+    res.render('issues_new.ejs', { user: user || null, error: null, formData: {} });
+  } catch (err) {
+    console.error('Error rendering new issue page:', err);
+    res.render('issues_new.ejs', { user: null, error: 'Server error', formData: {} });
+  }
 });
 
-app.post('/issues', upload.single('imageUrl'), async (req, res) => {
-    try {
-        // Multer will populate req.file and req.body for multipart/form-data
-        const { userId, title, description, category, severity, latitude, longitude } = req.body || {};
-        const location = (latitude && longitude) ? { latitude: parseFloat(latitude), longitude: parseFloat(longitude) } : undefined;
+// Create issue
+app.post('/issues', upload.single('image'), async (req, res) => {
+  try {
+    // Validate and coerce inputs
+    const { userId, title, description, category, severity, latitude, longitude } = req.body;
 
-        const imagePath = req.file ? '/uploads/' + req.file.filename : undefined;
+    // Basic server-side checks
+    if (!userId) throw new Error('userId is required. Provide ?id=<userId> or login first.');
+    // Ensure userId looks like ObjectId
+    if (!/^[0-9a-fA-F]{24}$/.test(userId)) throw new Error('Invalid userId format. Must be 24 hex chars.');
 
-        const newIssue = new Issue({
-            userId: userId || undefined,
-            title,
-            description,
-            category,
-            severity,
-            location,
-            imageUrl: imagePath
-        });
-        await newIssue.save();
-        return res.redirect('/issues');
-    } catch (err) {
-        console.error('Create issue error:', err);
-        if (err && err.name === 'ValidationError') {
-            const messages = Object.values(err.errors).map(e => e.message).join('; ');
-            return res.status(400).send(`Validation failed: ${messages}`);
-        }
-        return res.status(500).send('Server error creating issue');
+    if (!title || title.trim().length < 5) throw new Error('Title required (min 5 chars).');
+    if (!description || description.trim().length < 10) throw new Error('Description required (min 10 chars).');
+
+    // Category must match schema enums:
+    const allowedCategories = [
+      "pothole",
+      "garbage",
+      "water_leakage",
+      "streetlight",
+      "public_safety",
+      "infrastructure_damage",
+      "other"
+    ];
+    if (!allowedCategories.includes(category)) throw new Error('Invalid category selected.');
+
+    const allowedSeverity = ['low','medium','high'];
+    if (!allowedSeverity.includes(severity)) throw new Error('Invalid severity selected.');
+
+    // location check
+    const lat = Number(latitude);
+    const lon = Number(longitude);
+    if (Number.isNaN(lat) || Number.isNaN(lon)) throw new Error('Location required. Click "Get Location" to capture coordinates.');
+
+    // image url: store a web-usable path
+    const imageUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
+
+    const issue = new Issue({
+      userId,
+      title: title.trim(),
+      description: description.trim(),
+      category,
+      severity,
+      imageUrl,
+      location: { latitude: lat, longitude: lon }
+    });
+
+    await issue.save();
+    res.redirect('/issues');
+  } catch (err) {
+    console.error('Create issue error:', err);
+    // Render the form again with error and form data to help user correct
+    // Try to pass back a valid user if available
+    let user = null;
+    if (req.body.userId && /^[0-9a-fA-F]{24}$/.test(req.body.userId)) {
+      try { user = await User.findById(req.body.userId).lean(); } catch(e){}
+    } else {
+      user = await User.findOne().lean();
     }
+    res.status(400).render('issues_new.ejs', {
+      user: user || null,
+      error: err.message || 'Validation error',
+      formData: {
+        title: req.body.title,
+        description: req.body.description,
+        category: req.body.category,
+        severity: req.body.severity,
+        latitude: req.body.latitude,
+        longitude: req.body.longitude
+      }
+    });
+  }
 });
 
 app.get('/issues/:id', async (req, res) => {
-    try {
-        const issue = await Issue.findById(req.params.id).lean();
-        if (!issue) return res.status(404).send('Issue not found');
-        return res.render('issue_show', { issue });
-    } catch (err) {
-        console.error('Error loading issue:', err);
-        return res.status(500).send('Server error');
-    }
+  try {
+    const issue = await Issue.findById(req.params.id).lean();
+    if (!issue) return res.status(404).send('Issue not found');
+    res.render('issue_show.ejs', { issue });
+  } catch (err) {
+    console.error('Error loading issue:', err);
+    res.status(500).send('Server error');
+  }
 });
 
-app.get('/users/:id/edit', async (req, res) => {
-    let id=req.params.id;
-    const user=await User.findById(id);
-
-   res.render('edit.ejs',{user});
-});
-
-// Update user
-app.put('/users/:id', async (req, res) => {
-    try {
-        const id = req.params.id;
-        const { name, email, phone, role, password } = req.body;
-        const update = { name, email, phone, role };
-        if (password && password.length > 0) update.password = password;
-
-        const user = await User.findByIdAndUpdate(id, update, { new: true, runValidators: true });
-        if (!user) {
-            console.log('User not found for update:', id);
-            return res.status(404).send('User not found');
-        }
-        return res.redirect('/account');
-    } catch (err) {
-        console.error('Update error:', err);
-        if (err && err.code === 11000) {
-            const dupKey = Object.keys(err.keyValue || {}).join(', ');
-            return res.status(400).send(`Update failed: duplicate field(s): ${dupKey}`);
-        }
-        if (err && err.name === 'ValidationError') {
-            const messages = Object.values(err.errors).map(e => e.message).join('; ');
-            return res.status(400).send(`Validation failed: ${messages}`);
-        }
-        return res.status(500).send('Server error updating user');
-    }
-});
-
-app.put('/users/:id', async (req, res) => {
-    try {
-        const { name, email, password, role, phone } = req.body;
-        let id = req.params.id;
-        const user = await User.findById(id);
-        if (!user) {
-            return res.status(404).send('User not found');
-        }
-        user.name = name;
-        user.email = email;
-        user.password = password;
-        user.role = role;
-        user.phone = phone;
-        await user.save();
-        res.redirect('/account');
-    } catch (err) {
-        console.error('Error updating user:', err);     
-        res.status(500).send('Server error while updating user');
-    }
-});
-
-app.get('/issues',async(req,res)=>{
-    try{
-        const issues=await Issue.find().lean();
-        res.render('issues.ejs',{issues});
-    }catch(err){
-        console.error('Error fetching issues:',err);
-        res.status(500).send('Server error fetching issues');
-    }
-});
-app.get('/upload', (req, res) => {
-    res.render('../listings/upload.ejs');
-});
+// ---------- Image analysis & AI routes (kept similar to your original) ----------
+app.get('/upload', (req, res) => res.render('upload.ejs'));
 app.post('/upload', upload.single('file'), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).send("No file uploaded.");
-        }
-
-        // Call your AI function with the image file path
-        const analysis = await analyzeImage(req.file.path);  // analyzeImage expects a file path
-
-        // Render the EJS with filename and AI analysis
-        res.render("analysis_result", {
-            image: req.file.filename,
-            analysis: analysis
-        });
-
-    } catch (err) {
-        console.error("Error analyzing image:", err);
-        res.status(500).send("Server error analyzing the image.");
-    }
+  try {
+    if (!req.file) return res.status(400).send('No file uploaded.');
+    const analysis = await analyzeImage(req.file.path); // keep your function contract
+    res.render('analysis_result.ejs', { image: req.file.filename, analysis });
+  } catch (err) {
+    console.error('Image analysis error:', err);
+    res.status(500).send('Error analyzing image');
+  }
 });
 
-app.get('/ai', (req, res) => {
-    res.render('ai_overview');
-});
-
+app.get('/ai', (req, res) => res.render('ai_overview.ejs'));
 app.post('/ai', async (req, res) => {
-    try {
-        const prompt = req.body.prompt;
-        if (!prompt || prompt.trim().length === 0) {
-            return res.render('../listings/ai_overview', { response: 'Please enter a prompt.' });
-        }
-        // Use Gemini AI to get a suggestion (correct format)
-        const { GoogleGenerativeAI } = require('@google/generative-ai');
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-        const result = await model.generateContent({
-            contents: [
-                {
-                    role: 'user',
-                    parts: [ { text: prompt } ]
-                }
-            ]
-        });
-        const response = result.response.text();
-        res.render('ai_overview', { response });
-    } catch (err) {
-        console.error('AI suggestion error:', err);
-        res.render('ai_overview', { response: 'Sorry, there was an error getting a suggestion from Gemini AI.' });
-    }
+  try {
+    const prompt = req.body.prompt;
+    if (!prompt || !prompt.trim()) return res.render('ai_overview.ejs', { response: 'Please enter prompt' });
+
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const result = await model.generateContent({ contents: [{ role: 'user', parts: [{ text: prompt }] }] });
+    const response = result.response.text();
+    res.render('ai_overview.ejs', { response });
+  } catch (err) {
+    console.error('AI error:', err);
+    res.render('ai_overview.ejs', { response: 'AI error' });
+  }
 });
 
-
-
-
-app.listen(port,()=>{
-    console.log(`Server is running on http://localhost:${port}`);
-})
+app.listen(port, () => console.log(`Server running at http://localhost:${port}`));
