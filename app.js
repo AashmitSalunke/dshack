@@ -215,16 +215,7 @@ app.post('/issues', upload.single('image'), async (req, res) => {
   }
 });
 
-app.get('/issues/:id', async (req, res) => {
-  try {
-    const issue = await Issue.findById(req.params.id).lean();
-    if (!issue) return res.status(404).send('Issue not found');
-    res.render('issue_show.ejs', { issue });
-  } catch (err) {
-    console.error('Error loading issue:', err);
-    res.status(500).send('Server error');
-  }
-});
+
 
 // ---------- Image analysis & AI routes (kept similar to your original) ----------
 app.get('/upload', (req, res) => res.render('upload.ejs'));

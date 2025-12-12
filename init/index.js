@@ -21,7 +21,7 @@ const initDBUser= async()=>{
         console.error('Error inserting users:', err);
         // show MongoServerError details if present
         if(err.writeErrors) console.error('Write errors:', err.writeErrors.map(e=>e.errmsg || e.message));
-        throw err;
+        throw err;    
     }
 }
 
