@@ -222,7 +222,7 @@ app.get('/issues/:id', async (req, res) => {
     res.render('issue_show.ejs', { issue });
   } catch (err) {
     console.error('Error loading issue:', err);
-    res.status(500).send('Server error');
+    res.status(500).send('Error loading issue');
   }
 });
 
